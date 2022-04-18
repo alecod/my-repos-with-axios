@@ -1,8 +1,11 @@
 import React from 'react'
 
-function Repository() {
+function Repository({match}) {
   return (
-    <div>index</div>
+    <div>
+      <h1>Repository</h1>
+      {decodeURIComponent(match.params.repository)}
+    </div>
   )
 }
 

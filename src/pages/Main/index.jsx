@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { FaGithub, FaPlus, FaSpinner, FaBars, FaTrash } from "react-icons/fa";
 
 import { Container, Form, SubmitButton, List, DeleteButton } from "./style";
+import { Link } from "react-router-dom";
 
 import API from "../../services/api";
 
@@ -10,6 +11,25 @@ function Main() {
   const [newRepo, setNewRepo] = useState("");
   const [repository, setRepository] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState(null)
+
+  //did mount
+
+  useEffect(() => {
+    const reposStorage = localStorage.getItem("repos");
+
+    if (reposStorage) {
+      setRepository(JSON.parse(reposStorage));
+    }
+  }, [])
+
+
+  
+  // did update
+  useEffect(() => {
+    localStorage.setItem("repos", JSON.stringify(repository));
+  }, [repository])
+
 
   const handleSubmit = useCallback(
     (e) => {
@@ -17,9 +37,20 @@ function Main() {
 
       async function submit() {
         setLoading(true);
-
+        setAlert(null);
         try {
-          const response = await API.get(`/repos/${newRepo}`);
+
+          if(newRepo === "") {
+            throw new Error("Digite um repositório válido");
+          }
+
+          const response = await API.get(`/repos/${newRepo}`)
+
+          const hasRepo = repository.find(repo => repo.name === newRepo);
+
+          if(hasRepo) {
+            throw new Error("Repositório já adicionado");
+          }
 
           const data = {
             name: response.data.full_name,
@@ -28,6 +59,7 @@ function Main() {
           setRepository([...repository, data]);
           setNewRepo("");
         } catch (err) {
+          setAlert(true)
           console.log(err);
         } finally {
           setLoading(false);
@@ -41,6 +73,7 @@ function Main() {
 
   function handleInputChange(e) {
     setNewRepo(e.target.value);
+    setAlert(null)
   }
 
   const handleDelete = useCallback((repo) => {
@@ -55,7 +88,7 @@ function Main() {
         Meus repositorios
       </h1>
 
-      <Form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit} error={alert}>
         <input
           type="text"
           placeholder="Digite o nome do repositorio"
@@ -83,9 +116,9 @@ function Main() {
                   <FaTrash size={12}/>
                 </DeleteButton>
                 {repo.name}</span>
-              <a href="ale">
+              <Link to={`/repository/${ encodeURIComponent(repo.name)}`}>
                 <FaBars size={14} />
-              </a>
+              </Link>
             </li>
           ))}
       </List>
